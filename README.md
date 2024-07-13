@@ -1,21 +1,18 @@
-# Source Record filter for OBS Studio
+# OBS Studio的Source Record filter
 
-Plugin for OBS Studio to make sources available to record via a filter
+obs studio的插件source record
 
-# Download
+# 原作者下载地址
 
 https://obsproject.com/forum/resources/source-record.1285/
 
-# Build
-1. In-tree build
-    - Build OBS Studio: https://obsproject.com/wiki/Install-Instructions
-    - Check out this repository to plugins/source-record
-    - Add `add_subdirectory(source-record)` to plugins/CMakeLists.txt
-    - Rebuild OBS Studio
+# obs构建和插件开发
 
-1. Stand-alone build (Linux only)
-    - Verify that you have package with development files for OBS
-    - Check out this repository and run `cmake -S . -B build -DBUILD_OUT_OF_TREE=On && cmake --build build`
-
-# Donations
-https://www.paypal.me/exeldro
+1. 树内构建
+   * 构建OBS Studio：[https://obsproject.com/wiki/Install-Instructions](https://obsproject.com/wiki/Install-Instructions)
+   * 把插件改名为plugins/source-record
+   * 在plugins/CMakeLists.txt中添加 `add_subdirectory(source-record)`
+   * 重新构建 OBS Studio
+2. 独立构建（仅限 Linux）//我没试过
+   * 确认您具有包含 OBS 开发文件的包
+   * 查看此存储库并运行 `cmake -S . -B build -DBUILD_OUT_OF_TREE=On && cmake --build build` `cmake -S . -B build -DBUILD_OUT_OF_TREE=On && cmake --buid build`
