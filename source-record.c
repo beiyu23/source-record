@@ -648,6 +648,29 @@ bool allSettingsTracksTrue(obs_data_t* settings) {
 	bool track_6 = obs_data_get_bool(settings, "track_6");
 	return track_1 || track_2 || track_3 || track_4 || track_5 || track_6;
 }
+bool tracksDiffer(struct source_record_filter_context* filter, obs_data_t* settings) {
+	bool filter_track_1 = filter->track_1;
+	bool filter_track_2 = filter->track_2;
+	bool filter_track_3 = filter->track_3;
+	bool filter_track_4 = filter->track_4;
+	bool filter_track_5 = filter->track_5;
+	bool filter_track_6 = filter->track_6;
+
+	bool settings_track_1 = obs_data_get_bool(settings, "track_1");
+	bool settings_track_2 = obs_data_get_bool(settings, "track_2");
+	bool settings_track_3 = obs_data_get_bool(settings, "track_3");
+	bool settings_track_4 = obs_data_get_bool(settings, "track_4");
+	bool settings_track_5 = obs_data_get_bool(settings, "track_5");
+	bool settings_track_6 = obs_data_get_bool(settings, "track_6");
+
+	return (filter_track_1 != settings_track_1) ||
+		(filter_track_2 != settings_track_2) ||
+		(filter_track_3 != settings_track_3) ||
+		(filter_track_4 != settings_track_4) ||
+		(filter_track_5 != settings_track_5) ||
+		(filter_track_6 != settings_track_6);
+}
+
 
 static void source_record_filter_update(void* data, obs_data_t* settings)
 {
@@ -683,6 +706,7 @@ static void source_record_filter_update(void* data, obs_data_t* settings)
 
 		bool old_track = allFilterTracksTrue(filter);
 		bool new_track = allSettingsTracksTrue(settings);
+		bool change_track = tracksDiffer(filter, settings);
 
 
 		if (!filter->audio_output) {
@@ -701,12 +725,12 @@ static void source_record_filter_update(void* data, obs_data_t* settings)
 			}
 		}
 		//else if (audio_track > 0 && filter->audio_track <= 0) {
-		else if (old_track && !new_track) {
+		else if (!old_track && new_track) {
 			audio_output_close(filter->audio_output);
 			filter->audio_output = obs_get_audio();
 		}
 		//else if (audio_track <= 0 && filter->audio_track > 0) {
-		else if (!old_track && new_track) {
+		else if (old_track && !new_track) {
 			filter->audio_output = NULL;
 			struct audio_output_info oi = { 0 };
 			oi.name = obs_source_get_name(filter->source);
@@ -719,7 +743,7 @@ static void source_record_filter_update(void* data, obs_data_t* settings)
 		}
 
 		//if (!filter->aacTrack || filter->audio_track != audio_track) {
-		if (!filter->aacTrack || !filter->aacTrack5 || !filter->aacTrack2 || !filter->aacTrack3 || !filter->aacTrack4 || !filter->aacTrack1) {
+		if (!filter->aacTrack || !filter->aacTrack5 || !filter->aacTrack2 || !filter->aacTrack3 || !filter->aacTrack4 || !filter->aacTrack1 || change_track) {
 			if (filter->aacTrack) {
 				obs_encoder_release(filter->aacTrack);
 				filter->aacTrack = NULL;
@@ -1150,7 +1174,7 @@ static void source_record_delayed_destroy(void* data)
 		return;
 	}
 	if (context->aacTrack3 && obs_encoder_active(context->aacTrack3)) {
-		//run_queued(source_record_delayed_destroy, context);
+		run_queued(source_record_delayed_destroy, context);
 		return;
 	}
 	if (context->aacTrack4 && obs_encoder_active(context->aacTrack4)) {
@@ -1184,7 +1208,8 @@ static void source_record_delayed_destroy(void* data)
 	obs_weak_source_release(context->audio_source);
 	context->audio_source = NULL;
 
-	if (context->audio_track <= 0)
+	//if (context->audio_track <= 0)
+	if (!allFilterTracksTrue(context))
 		audio_output_close(context->audio_output);
 
 	obs_service_release(context->service);
@@ -1384,13 +1409,13 @@ static bool encoder_changed(void* data, obs_properties_t* props, obs_property_t*
 	}
 	obs_property_t* p = obs_properties_add_text(props, "others", obs_module_text("OtherSourceRecords"), OBS_TEXT_INFO);
 	obs_property_set_visible(p, visible);
-	/* obs_properties_add_text(
+	obs_properties_add_text(
 		props, "plugin_info",
 		"<a href=\"https://obsproject.com/forum/resources/source-record.1285/\">Source Record</a> (" PROJECT_VERSION
 		") by <a href=\"https://www.exeldro.com\">Exeldro</a>",
-		OBS_TEXT_INFO);*/
-	const char* json_str = obs_data_get_json(settings);
-	obs_properties_add_text(props, "plugin_info", json_str, OBS_TEXT_INFO);
+		OBS_TEXT_INFO);
+	//const char* json_str = obs_data_get_json(settings);
+	//obs_properties_add_text(props, "plugin_info", json_str, OBS_TEXT_INFO);
 	return true;
 }
 
@@ -1567,12 +1592,12 @@ static obs_properties_t* source_record_filter_properties(void* data)
 		obs_property_set_visible(p, false);
 	}
 
-	/* obs_properties_add_text(
+	obs_properties_add_text(
 		props, "plugin_info",
 		"<a href=\"https://obsproject.com/forum/resources/source-record.1285/\">Source Record</a> (" PROJECT_VERSION
 		") by <a href=\"https://www.exeldro.com\">Exeldro</a>",
-		OBS_TEXT_INFO);*/
-	obs_properties_add_text(props, "plugin_info", data, OBS_TEXT_INFO);
+		OBS_TEXT_INFO);
+	//obs_properties_add_text(props, "plugin_info", data, OBS_TEXT_INFO);
 	return props;
 }
 

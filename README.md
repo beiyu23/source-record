@@ -8,7 +8,7 @@ https://obsproject.com/forum/resources/source-record.1285/
 
 # obs构建和插件开发
 
-1. 树内构建
+1. obs内构建（windows平台，有点麻烦）
    * 构建OBS Studio：[https://obsproject.com/wiki/Install-Instructions](https://obsproject.com/wiki/Install-Instructions)
    * 把插件改名为plugins/source-record
    * 在plugins/CMakeLists.txt中添加 `add_subdirectory(source-record)`
