@@ -710,10 +710,9 @@ static void source_record_filter_update(void* data, obs_data_t* settings)
 
 
 		if (!filter->audio_output) {
-			if (diff_track) {
+			if (new_track) {
 				filter->audio_output = obs_get_audio();
-			}
-			else {
+			} else {
 				struct audio_output_info oi = { 0 };
 				oi.name = obs_source_get_name(filter->source);
 				oi.speakers = SPEAKERS_STEREO;
@@ -724,12 +723,10 @@ static void source_record_filter_update(void* data, obs_data_t* settings)
 				audio_output_open(&filter->audio_output, &oi);
 			}
 		}
-		//else if (audio_track > 0 && filter->audio_track <= 0) {
 		else if (!old_track && new_track) {
 			audio_output_close(filter->audio_output);
 			filter->audio_output = obs_get_audio();
 		}
-		//else if (audio_track <= 0 && filter->audio_track > 0) {
 		else if (old_track && !new_track) {
 			filter->audio_output = NULL;
 			struct audio_output_info oi = { 0 };
@@ -742,7 +739,6 @@ static void source_record_filter_update(void* data, obs_data_t* settings)
 			audio_output_open(&filter->audio_output, &oi);
 		}
 
-		//if (!filter->aacTrack || filter->audio_track != audio_track) {
 		if (!filter->aacTrack || !filter->aacTrack5 || !filter->aacTrack2 || !filter->aacTrack3 || !filter->aacTrack4 || !filter->aacTrack1 || change_track) {
 			if (filter->aacTrack) {
 				obs_encoder_release(filter->aacTrack);
@@ -769,26 +765,26 @@ static void source_record_filter_update(void* data, obs_data_t* settings)
 				filter->aacTrack5 = NULL;
 			}
 
-			if (filter->track_1) {
+			if (filter->track_1 && diff_track) {
 				filter->aacTrack = obs_audio_encoder_create("ffmpeg_aac", obs_source_get_name(filter->source), NULL, 0, NULL);
 			}
-			if (filter->track_2) {
+			if (filter->track_2 && diff_track) {
 				filter->aacTrack1 = obs_audio_encoder_create("ffmpeg_aac", obs_source_get_name(filter->source), NULL, 1, NULL);
 			}
-			if (filter->track_3) {
+			if (filter->track_3 && diff_track) {
 				filter->aacTrack2 = obs_audio_encoder_create("ffmpeg_aac", obs_source_get_name(filter->source), NULL, 2, NULL);
 			}
-			if (filter->track_4) {
+			if (filter->track_4 && diff_track) {
 				filter->aacTrack3 = obs_audio_encoder_create("ffmpeg_aac", obs_source_get_name(filter->source), NULL, 3, NULL);
 			}
-			if (filter->track_5) {
+			if (filter->track_5 && diff_track) {
 				filter->aacTrack4 = obs_audio_encoder_create("ffmpeg_aac", obs_source_get_name(filter->source), NULL, 4, NULL);
 			}
-			if (filter->track_6) {
+			if (filter->track_6 && diff_track) {
 				filter->aacTrack5 = obs_audio_encoder_create("ffmpeg_aac", obs_source_get_name(filter->source), NULL, 5, NULL);
 			}
 
-			if (!filter->track_1 && !filter->track_2 && !filter->track_3 && !filter->track_4 && !filter->track_5 && !filter->track_6) {
+			if ((!filter->track_1 && !filter->track_2 && !filter->track_3 && !filter->track_4 && !filter->track_5 && !filter->track_6) || !diff_track) {
 				filter->aacTrack = obs_audio_encoder_create("ffmpeg_aac", obs_source_get_name(filter->source), NULL, 0, NULL);
 				filter->aacTrack1 = NULL;
 				filter->aacTrack2 = NULL;
@@ -1141,7 +1137,6 @@ static void* source_record_filter_create(obs_data_t* settings, obs_source_t* sou
 	context->last_frontend_event = -1;
 	context->enableHotkey = OBS_INVALID_HOTKEY_PAIR_ID;
 
-	//设置录像模式为 虚拟摄像机
 	obs_data_set_default_int(settings, "record_mode", 5);
 	obs_data_set_default_string(settings, "rec_format", "mp4");
 
@@ -1202,13 +1197,11 @@ static void source_record_delayed_destroy(void* data)
 		obs_encoder_release(context->aacTrack4);
 	}
 
-	//obs_encoder_release(context->aacTrack);
 	obs_encoder_release(context->encoder);
 
 	obs_weak_source_release(context->audio_source);
 	context->audio_source = NULL;
 
-	//if (context->audio_track <= 0)
 	if (!allFilterTracksTrue(context))
 		audio_output_close(context->audio_output);
 
@@ -1414,8 +1407,6 @@ static bool encoder_changed(void* data, obs_properties_t* props, obs_property_t*
 		"<a href=\"https://obsproject.com/forum/resources/source-record.1285/\">Source Record</a> (" PROJECT_VERSION
 		") by <a href=\"https://www.exeldro.com\">Exeldro</a>",
 		OBS_TEXT_INFO);
-	//const char* json_str = obs_data_get_json(settings);
-	//obs_properties_add_text(props, "plugin_info", json_str, OBS_TEXT_INFO);
 	return true;
 }
 
@@ -1495,16 +1486,7 @@ static obs_properties_t* source_record_filter_properties(void* data)
 
 	obs_properties_t* audio = obs_properties_create();
 
-	//p = obs_properties_add_list(audio, "audio_track", obs_module_text("AudioTrack"), OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_INT);
 	obs_property_list_add_int(p, obs_module_text("None"), 0);
-	// 添加复选框属性来选择多个音轨
-	/* const char *track = obs_module_text("Track");
-	for (int i = 1; i <= MAX_AUDIO_MIXES; i++) {
-		char buffer[64];
-		snprintf(buffer, 64, "%s %i", track, i);
-		obs_property_list_add_int(p, buffer, i);
-	}*/
-	//obs_property_list_add_int(p, obs_module_text("None"), 0);
 	for (int i = 1; i <= MAX_AUDIO_MIXES; i++) {
 		char buffer[64];
 		snprintf(buffer, 64, "track_%d", i);
@@ -1597,7 +1579,6 @@ static obs_properties_t* source_record_filter_properties(void* data)
 		"<a href=\"https://obsproject.com/forum/resources/source-record.1285/\">Source Record</a> (" PROJECT_VERSION
 		") by <a href=\"https://www.exeldro.com\">Exeldro</a>",
 		OBS_TEXT_INFO);
-	//obs_properties_add_text(props, "plugin_info", data, OBS_TEXT_INFO);
 	return props;
 }
 
